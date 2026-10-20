@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Noctide</title>
+<link rel="icon" href="/static/noctide.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="/static/style.css">
+<script>window.NOCTIDE_TOKEN = "__TOKEN__";</script>
+</head>
+<body>
+<div id="app">
+  <header class="bar">
+    <div class="bar-section left">
+      <div class="logo capsule" title="Noctide"><i class="ti ti-moon-stars"></i><span>Noctide</span></div>
+      <button class="capsule" id="btn-folder" title="Open folder (Ctrl+O)"><i class="ti ti-folder"></i><span id="ws-name">…</span><i class="ti ti-chevron-down caret"></i></button>
+    </div>
+    <nav class="bar-section center" id="tabs"></nav>
+    <div class="bar-section right">
+      <button class="capsule diag-pill" id="diag-pill" title="Problems (Ctrl+Shift+M)">
+        <span class="err"><i class="ti ti-circle-x"></i><b id="n-err">0</b></span>
+        <span class="warn"><i class="ti ti-alert-triangle"></i><b id="n-warn">0</b></span>
+      </button>
+      <button class="capsule round" id="btn-format" title="Format document (Shift+Alt+F)"><i class="ti ti-wand"></i></button>
+      <button class="capsule round" id="btn-palette" title="Command palette (Ctrl+Shift+P)"><i class="ti ti-command"></i></button>
+      <button class="capsule accent" id="btn-run" title="Run (Ctrl+Enter)"><i class="ti ti-player-play-filled"></i><span>Run</span></button>
+      <button class="capsule round" id="btn-settings" title="Settings (Ctrl+,)"><i class="ti ti-settings"></i></button>
+      <div class="capsule clock" id="clock">--:--</div>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="panel sidebar" id="sidebar">
+      <div class="panel-head">
+        <div class="seg small" id="side-seg">
+          <button class="seg-btn active" data-view="explorer" title="Explorer"><i class="ti ti-files"></i></button>
+          <button class="seg-btn" data-view="search" title="Search in files (Ctrl+Shift+F)"><i class="ti ti-search"></i></button>
+        </div>
+        <span class="actions" id="explorer-actions">
+          <button class="mini" id="btn-new-file" title="New file (Alt+N)"><i class="ti ti-file-plus"></i></button>
+          <button class="mini" id="btn-new-dir" title="New folder"><i class="ti ti-folder-plus"></i></button>
+          <button class="mini" id="btn-collapse-all" title="Collapse all"><i class="ti ti-fold"></i></button>
+          <button class="mini" id="btn-refresh" title="Refresh"><i class="ti ti-refresh"></i></button>
+        </span>
+      </div>
+      <div class="side-view" id="view-explorer">
+        <div class="tree-hint hidden" id="tree-hint"></div>
+        <div class="tree" id="tree" tabindex="0"></div>
+      </div>
+      <div class="side-view hidden" id="view-search">
+        <div class="search-box">
+          <i class="ti ti-search"></i>
+          <input id="search-input" placeholder="Search in files…" spellcheck="false">
+          <button class="opt" id="search-case" title="Match case">Aa</button>
+          <button class="opt" id="search-regex" title="Regular expression">.*</button>
+        </div>
+        <div class="search-summary" id="search-summary"></div>
+        <div class="search-results" id="search-results"></div>
+      </div>
+      <div class="theme-chip" id="theme-src" title="Colors come from your Noctalia palette"></div>
+    </aside>
+    <div class="resizer v" id="rs-side" title="Drag to resize"></div>
+
+    <section class="center-col">
+      <div class="panel editor-panel">
+        <div class="breadcrumb" id="breadcrumb"></div>
+        <div id="editor"></div>
+        <div class="empty" id="empty">
+          <i class="ti ti-moon-stars"></i>
+          <h2>Noctide</h2>
+          <p>Open a file from the explorer, or press <kbd>Ctrl</kbd><kbd>P</kbd> to find one.</p>
+          <div class="keys">
+            <span><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd> commands</span>
+            <span><kbd>Ctrl</kbd><kbd>Enter</kbd> run</span>
+            <span><kbd>Ctrl</kbd><kbd>,</kbd> settings</span>
+            <span><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>F</kbd> search</span>
+          </div>
+          <div class="recent" id="empty-recent"></div>
+        </div>
+      </div>
+      <div class="resizer h" id="rs-bottom" title="Drag to resize"></div>
+      <div class="panel bottom" id="bottom">
+        <div class="panel-head">
+          <div class="seg">
+            <button class="seg-btn active" data-tab="problems"><i class="ti ti-bug"></i>Problems <span class="count" id="prob-count">0</span></button>
+            <button class="seg-btn" data-tab="output"><i class="ti ti-terminal-2"></i>Output</button>
+            <button class="seg-btn" data-tab="stdin"><i class="ti ti-keyboard"></i>Input</button>
+          </div>
+          <span class="actions">
+            <div class="seg small" id="prob-filter" title="Filter problems">
+              <button class="seg-btn active" data-f="all">All</button>
+              <button class="seg-btn" data-f="file">This file</button>
+            </div>
+            <label class="toggle" title="Check automatically while typing"><input type="checkbox" id="auto-check"><span></span>Live</label>
+            <button class="mini" id="btn-check" title="Check now (F7)"><i class="ti ti-checks"></i></button>
+            <button class="mini" id="btn-clear-out" title="Clear output"><i class="ti ti-clear-all"></i></button>
+            <button class="mini" id="btn-collapse" title="Toggle panel (Ctrl+J)"><i class="ti ti-chevron-down"></i></button>
+          </span>
+        </div>
+        <div class="tab-body" id="tab-problems"><div class="problems" id="problems"></div></div>
+        <div class="tab-body hidden" id="tab-output"><pre class="output" id="output">Run a file to see its output here.</pre></div>
+        <div class="tab-body hidden" id="tab-stdin"><textarea id="stdin" placeholder="Text sent to the program's standard input when you press Run…"></textarea></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="status" id="status">
+    <span class="st" id="st-branch"></span>
+    <span class="st clickable" id="st-diags"></span>
+    <span class="st" id="st-msg"></span>
+    <span class="grow"></span>
+    <span class="st clickable" id="st-pos" title="Go to line (Ctrl+G)"></span>
+    <span class="st clickable" id="st-indent" title="Change indentation"></span>
+    <span class="st" id="st-eol"></span>
+    <span class="st clickable" id="st-lang" title="Language"></span>
+    <span class="st clickable" id="st-engine" title="Which tool checks this file — click for settings"></span>
+  </footer>
+
+  <!-- overlays -->
+  <div class="scrim hidden" id="scrim"></div>
+
+  <div class="settings hidden" id="settings">
+    <nav class="settings-nav" id="settings-nav"></nav>
+    <div class="settings-main">
+      <div class="settings-head">
+        <div class="search-box"><i class="ti ti-search"></i><input id="settings-search" placeholder="Search settings…" spellcheck="false"></div>
+        <button class="mini" data-close title="Close (Esc)"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="settings-body" id="settings-body"></div>
+    </div>
+  </div>
+
+  <div class="palette hidden" id="palette">
+    <div class="search-box big"><i class="ti ti-chevron-right" id="palette-icon"></i><input id="palette-input" spellcheck="false" autocomplete="off"></div>
+    <div class="palette-list" id="palette-list"></div>
+    <div class="palette-hint"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span><kbd>&gt;</kbd> commands</span><span><kbd>:</kbd> go to line</span></div>
+  </div>
+
+  <div class="ctx hidden" id="ctx"></div>
+
+  <div class="dialog hidden" id="dialog">
+    <div class="dialog-title" id="dialog-title"></div>
+    <div class="dialog-text" id="dialog-text"></div>
+    <input id="dialog-input" spellcheck="false">
+    <div class="dialog-actions" id="dialog-actions"></div>
+  </div>
+
+  <div class="toast hidden" id="toast"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

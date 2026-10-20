@@ -1,0 +1,32 @@
+#!/bin/sh
+# Noctide launcher. Starts the server if it isn't running, then opens an app window.
+#   noctide [folder]   (with no folder it reopens the last one you used)
+DIR="$(dirname "$(readlink -f "$0")")"
+PORT="${NOCTIDE_PORT:-7717}"
+URL="http://127.0.0.1:$PORT/"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}"
+STATE="$STATE_DIR/noctide.server"
+mkdir -p "$STATE_DIR"
+
+up() { curl -s -o /dev/null --max-time 1 "$URL"; }
+
+# A server left over from before an update still runs the old code: restart it.
+if up; then
+    want="$(stat -c %Y "$DIR/noctide.py")"
+    read -r pid have 2>/dev/null <"$STATE" || { pid=""; have=""; }
+    if [ "$have" != "$want" ]; then
+        [ -n "$pid" ] && kill "$pid" 2>/dev/null
+        pkill -f "$DIR/noctide.py" 2>/dev/null
+        for _ in $(seq 30); do up || break; sleep 0.1; done
+    fi
+fi
+
+if ! up; then
+    nohup python3 "$DIR/noctide.py" ${1:+"$1"} --port "$PORT" --no-browser --idle-exit 180 >"$STATE_DIR/noctide.log" 2>&1 &
+    for _ in $(seq 40); do up && break; sleep 0.1; done
+fi
+
+for b in brave-origin brave chromium google-chrome-stable; do
+    if command -v "$b" >/dev/null; then exec "$b" --app="$URL" --class=noctide; fi
+done
+exec xdg-open "$URL"
